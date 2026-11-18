@@ -1,0 +1,68 @@
+/* bb-motion.css v1.0.0 for bikrambhujel.com.np. Motion ported from React Bits (reactbits.dev, MIT + Commons Clause). */
+/* ---------- v1.47: motion ported from React Bits (BlurText, SpotlightCard, ShinyText, CountUp) ----------
+   Plain CSS and JS, no React. Light and dark through the theme tokens. Nothing is hidden unless the
+   script that reveals it has already run, and reduced motion gets the finished state. */
+
+/* BlurText: the homepage name settles in letter by letter, out of a soft blur. */
+.bb-hero h1.bb-blur{animation:none}
+.bb-blur .bb-bw{display:inline-block;white-space:nowrap}
+.bb-blur .bb-bl{display:inline-block;will-change:transform,filter,opacity;animation:bb-blur-in .85s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--i,0) * 38ms + 80ms)}
+@keyframes bb-blur-in{
+  0%{opacity:0;filter:blur(12px);transform:translateY(-.32em)}
+  55%{opacity:.6;filter:blur(3px);transform:translateY(.04em)}
+  100%{opacity:1;filter:blur(0);transform:none}
+}
+
+/* SpotlightCard: a soft light follows the pointer across a post card and lights the edge near it. */
+.bb-card{--mx:50%;--my:50%;--spot:rgba(255,192,0,.10);--spot-edge:rgba(16,24,39,.30)}
+html[data-theme="dark"] .bb-card{--spot:rgba(255,192,0,.13);--spot-edge:rgba(255,192,0,.7)}
+.bb-spot,.bb-spot-edge{position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .35s cubic-bezier(.22,.8,.3,1)}
+.bb-spot{z-index:0;background:radial-gradient(260px circle at var(--mx) var(--my),var(--spot),transparent 70%)}
+.bb-spot-edge{z-index:2;padding:1px;background:radial-gradient(180px circle at var(--mx) var(--my),var(--spot-edge),transparent 70%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+.bb-card.is-lit .bb-spot,.bb-card.is-lit .bb-spot-edge{opacity:1}
+.bb-card .bb-card-media,.bb-card .bb-card-body{position:relative;z-index:1}
+
+/* ShinyText: one pass of light across the hire button when it comes into view. */
+.bb-hire .bb-cta{position:relative;overflow:hidden;isolation:isolate}
+.bb-hire .bb-cta::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.75) 50%,transparent 70%);transform:translateX(-130%)}
+.bb-hire .bb-cta.bb-pass-on::after{animation:bb-pass 1.4s cubic-bezier(.22,.8,.3,1) .25s both}
+@keyframes bb-pass{to{transform:translateX(130%)}}
+
+/* CountUp: figures count from zero once they are on screen. */
+[data-bb-count],.bb-course-hero-stat strong{font-variant-numeric:tabular-nums}
+
+@media (prefers-reduced-motion:reduce){
+  .bb-blur .bb-bl{animation:none}
+  .bb-spot,.bb-spot-edge{display:none}
+  .bb-hire .bb-cta.bb-pass-on::after{animation:none}
+}
+/* ---------- v1.48: stronger, visible motion. DotGrid (React Bits) behind the hero, a slower name
+   intro with the lines below following it, and the spotlight on the free-tool tiles too. ---------- */
+.bb-hero{position:relative;isolation:isolate;--dot:rgba(16,24,39,.16);--dot-on:#d99a00}
+html[data-theme="dark"] .bb-hero{--dot:rgba(255,255,255,.13);--dot-on:#ffc000}
+.bb-hero > .bb-wrap{position:relative;z-index:1}
+.bb-dots{position:absolute;inset:0;z-index:0;width:100%;height:100%;display:block;pointer-events:none;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,rgba(0,0,0,.35) 38%,#000 70%);mask-image:linear-gradient(90deg,transparent 0,rgba(0,0,0,.35) 38%,#000 70%)}
+@media (max-width:760px){.bb-dots{-webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,.15));mask-image:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,.15))}}
+
+/* Name first, then the lines under it, so the eye is led down the hero. */
+.bb-blur .bb-bl{animation-duration:1.1s;animation-delay:calc(var(--i,0) * 55ms + 120ms)}
+.bb-hero.bb-seq .bb-eyebrow{animation-delay:0s}
+.bb-hero.bb-seq .bb-lead{animation-delay:.75s}
+.bb-hero.bb-seq .bb-hero-actions{animation-delay:.9s}
+
+/* Free-tool tiles: same pointer light as the post cards, and on the homepage they arrive as a list. */
+.bb-tools a{position:relative;overflow:hidden;isolation:isolate;--mx:50%;--my:50%;--spot:rgba(255,192,0,.12);--spot-edge:rgba(16,24,39,.32)}
+html[data-theme="dark"] .bb-tools a{--spot:rgba(255,192,0,.14);--spot-edge:rgba(255,192,0,.7)}
+.bb-tools a .bb-spot{z-index:-1}
+.bb-tools a.is-lit .bb-spot,.bb-tools a.is-lit .bb-spot-edge{opacity:1}
+@keyframes bb-tile-in{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+.bb-tools.bb-seq li{animation:bb-tile-in .55s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--i,0) * 45ms + 1s)}
+
+@media (prefers-reduced-motion:reduce){
+  .bb-tools.bb-seq li{animation:none}
+  .bb-hero.bb-seq .bb-lead,.bb-hero.bb-seq .bb-hero-actions{animation-delay:0s}
+}
