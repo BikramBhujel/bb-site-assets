@@ -1,4 +1,4 @@
-/* bb-motion.js v1.0.1 for bikrambhujel.com.np. Motion ported from React Bits (reactbits.dev, MIT + Commons Clause). */
+/* bb-motion.js v1.1.0 for bikrambhujel.com.np. Motion ported from React Bits (reactbits.dev, MIT + Commons Clause). */
 (function(){
   // v1.47: SpotlightCard, ShinyText and CountUp, ported from React Bits to plain JS.
   var mm=function(q){return window.matchMedia&&matchMedia(q).matches;};
@@ -155,4 +155,151 @@
     t.addEventListener('pointerenter',function(){t.classList.add('is-lit');});
     t.addEventListener('pointerleave',function(){t.classList.remove('is-lit');});
   });
+})();
+(function(){
+  // bb-motion 1.1.0: motion for posts and pages, an animated image pop-up, the rail pop-up's
+  // contents and the mobile menu. Pages with their own motion (Hire Me, Projects) are left alone.
+  var d=document,mm=function(q){return window.matchMedia&&matchMedia(q).matches;};
+  var reduce=mm('(prefers-reduced-motion: reduce)'),fine=mm('(hover: hover) and (pointer: fine)');
+  var EASE='cubic-bezier(.16,1,.3,1)';
+
+  function light(el){
+    if(el.querySelector(':scope > .bb-spot'))return;
+    el.classList.add('bb-spotable');
+    var a=d.createElement('span');a.className='bb-spot';a.setAttribute('aria-hidden','true');
+    var b=d.createElement('span');b.className='bb-spot-edge';b.setAttribute('aria-hidden','true');
+    el.insertBefore(a,el.firstChild);el.appendChild(b);
+    var raf=0,x=0,y=0;
+    el.addEventListener('pointermove',function(e){var r=el.getBoundingClientRect();x=e.clientX-r.left;y=e.clientY-r.top;
+      if(!raf)raf=requestAnimationFrame(function(){raf=0;el.style.setProperty('--mx',x+'px');el.style.setProperty('--my',y+'px');});});
+    el.addEventListener('pointerenter',function(){el.classList.add('is-lit');});
+    el.addEventListener('pointerleave',function(){el.classList.remove('is-lit');});
+  }
+
+  // ---------- 1. Content reveal inside posts and pages ----------
+  function reveal(){
+    var body=d.querySelector('.post-body');
+    if(!body||!('IntersectionObserver' in window))return;
+    var SKIP='.bb-reveal,.hp-pro,.px-pro,.bb-member-card,.bb-premium-pay-card,.bbn,.bb-hire,[class*="hp-anim"],form';
+    var SEL='h2,h3,pre,table,blockquote,figure,.separator,ul,ol,.bb-toolinfo,img';
+    var fold=window.innerHeight*0.92,io=new IntersectionObserver(function(es){
+      var n=0;
+      es.forEach(function(en){if(!en.isIntersecting)return;var t=en.target;io.unobserve(t);
+        if(!t.classList.contains('bb-rv-grid'))t.style.transitionDelay=(n++*70)+'ms';
+        t.classList.add('is-in');
+        setTimeout(function(){t.style.transitionDelay='';},1200);});
+    },{rootMargin:'0px 0px -8% 0px'});
+    [].forEach.call(body.querySelectorAll(SEL),function(n){
+      if(n.closest(SKIP))return;
+      for(var p=n.parentElement;p&&p!==body;p=p.parentElement){if(p.matches(SEL))return;}
+      if(n.getBoundingClientRect().top<fold)return; // already on screen: never hide what was seen
+      var cs=getComputedStyle(n);
+      if((n.tagName==='UL'||n.tagName==='OL')&&/grid|flex/.test(cs.display)&&n.children.length>1){
+        [].forEach.call(n.children,function(li,i){li.style.setProperty('--i',Math.min(i,12));});
+        n.classList.add('bb-rv-grid');
+      }else{
+        n.classList.add('bb-rv');
+        if(n.tagName==='IMG'||n.tagName==='FIGURE'||n.classList.contains('separator'))n.classList.add('bb-rv-img');
+      }
+      io.observe(n);
+    });
+    // Card grids inside pages: pointer light on each link card.
+    if(fine)[].forEach.call(body.querySelectorAll('ul > li > a'),function(a){
+      var ul=a.parentElement.parentElement;
+      if(a.closest(SKIP)||!/grid|flex/.test(getComputedStyle(ul).display))return;
+      if(/^(block|flex|grid)$/.test(getComputedStyle(a).display))light(a);
+    });
+    // Safety net: show anything still hidden after a while that is on screen.
+    setTimeout(function(){[].forEach.call(d.querySelectorAll('.bb-rv:not(.is-in),.bb-rv-grid:not(.is-in)'),function(n){
+      if(n.getBoundingClientRect().top<window.innerHeight)n.classList.add('is-in');});},4000);
+  }
+
+  // ---------- 2. Image pop-up ----------
+  var IMGHREF=/\.(png|jpe?g|webp|gif|avif)(\?|$)|googleusercontent\.com|bp\.blogspot\.com/i;
+  function big(src){return src.replace(/\/s\d+(-[a-z0-9-]+)?\//,'/s1600/').replace(/\/w\d+-h\d+(-[a-z0-9-]+)?\//,'/s1600/').replace(/=s\d+(-[a-z0-9-]+)?$/,'=s1600').replace(/=w\d+-h\d+(-[a-z0-9-]+)?$/,'=s1600');}
+  function zoomable(img){
+    if(img.closest('.hp-pro,.px-pro,.bb-member-card,.bb-premium-pay-card,.bb-card,.bbn'))return false;
+    var a=img.closest('a');
+    if(a&&!IMGHREF.test(a.getAttribute('href')||''))return false; // a real link stays a link
+    return img.getBoundingClientRect().width>=160;
+  }
+  function openLb(img){
+    var a=img.closest('a'),src=a&&IMGHREF.test(a.href)?a.href:big(img.currentSrc||img.src);
+    var from=img.getBoundingClientRect(),opener=d.activeElement;
+    var lb=d.createElement('div');lb.className='bb-lb';lb.setAttribute('role','dialog');lb.setAttribute('aria-modal','true');lb.setAttribute('aria-label',img.alt||'Image');
+    lb.innerHTML='<div class="bb-lb-scrim"></div><button class="bb-lb-x" type="button" aria-label="Close image">×</button>';
+    var im=d.createElement('img');im.className='bb-lb-img';im.alt=img.alt||'';im.src=img.currentSrc||img.src;
+    lb.appendChild(im);
+    if(img.alt){var cap=d.createElement('p');cap.className='bb-lb-cap';cap.textContent=img.alt;lb.appendChild(cap);}
+    d.body.appendChild(lb);d.documentElement.classList.add('bb-lb-lock');
+    if(src!==im.src){var hi=new Image();hi.onload=function(){im.src=src;};hi.src=src;}
+    var to=im.getBoundingClientRect();
+    function flip(r1,r2){return 'translate('+(r1.left-r2.left)+'px,'+(r1.top-r2.top)+'px) scale('+(r1.width/r2.width)+','+(r1.height/r2.height)+')';}
+    requestAnimationFrame(function(){lb.classList.add('is-open');});
+    if(!reduce&&im.animate)im.animate([{transform:flip(from,to),borderRadius:'10px'},{transform:'none',borderRadius:'12px'}],{duration:480,easing:EASE});
+    else if(im.animate)im.animate([{opacity:0},{opacity:1}],{duration:250});
+    var x=lb.querySelector('.bb-lb-x');x.focus();
+    var closing=false;
+    function close(){
+      if(closing)return;closing=true;
+      lb.classList.remove('is-open');
+      var back=img.getBoundingClientRect(),now=im.getBoundingClientRect();
+      var anim=(!reduce&&im.animate&&back.bottom>0&&back.top<window.innerHeight)
+        ?im.animate([{transform:'none'},{transform:flip(back,now)}],{duration:360,easing:EASE,fill:'forwards'})
+        :(im.animate?im.animate([{opacity:1},{opacity:0}],{duration:200,fill:'forwards'}):null);
+      var done=function(){lb.remove();d.documentElement.classList.remove('bb-lb-lock');d.removeEventListener('keydown',key);if(opener&&opener.focus)opener.focus();};
+      if(anim)anim.onfinish=done;else done();
+    }
+    function key(e){if(e.key==='Escape')close();else if(e.key==='Tab'){e.preventDefault();x.focus();}}
+    lb.addEventListener('click',close);d.addEventListener('keydown',key);
+  }
+  function lightbox(){
+    var body=d.querySelector('.post-body');if(!body)return;
+    [].forEach.call(body.querySelectorAll('img'),function(img){
+      var mark=function(){if(zoomable(img)){img.classList.add('bb-zoomable');if(!img.closest('a')){img.tabIndex=0;img.setAttribute('role','button');img.setAttribute('aria-label','Open image'+(img.alt?': '+img.alt:''));}}};
+      if(img.complete)mark();else img.addEventListener('load',mark,{once:true});
+    });
+    // Window capture phase: runs before Blogger's own image lightbox, which would otherwise open
+    // underneath this one and stay behind after it closes.
+    window.addEventListener('click',function(e){
+      var img=e.target.closest&&e.target.closest('img.bb-zoomable');
+      if(!img||!body.contains(img)||e.metaKey||e.ctrlKey||e.shiftKey)return;
+      e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();openLb(img);
+    },true);
+    body.addEventListener('keydown',function(e){
+      if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('img.bb-zoomable')){e.preventDefault();openLb(e.target);}
+    });
+  }
+
+  // ---------- 3. Rail pop-up: its contents cascade in when it opens ----------
+  function railPop(){
+    if(reduce||!Element.prototype.animate)return;
+    function watch(pop){
+      var was=false;
+      new MutationObserver(function(){
+        var open=pop.classList.contains('is-open');
+        if(open&&!was){[].forEach.call(pop.children,function(c,i){
+          c.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'none'}],{duration:420,delay:70+Math.min(i,8)*40,easing:EASE,fill:'backwards'});});}
+        was=open;
+      }).observe(pop,{attributes:true,attributeFilter:['class']});
+    }
+    var pop=d.getElementById('bb-pop');
+    if(pop){watch(pop);return;}
+    var mo=new MutationObserver(function(){var p=d.getElementById('bb-pop');if(p){mo.disconnect();watch(p);}});
+    mo.observe(d.body,{childList:true,subtree:true});setTimeout(function(){mo.disconnect();},20000);
+  }
+
+  // ---------- 4. Mobile menu: number the links so they cascade ----------
+  function nav(){
+    var m=d.getElementById('bb-menu');if(!m)return;
+    [].forEach.call(m.children,function(li,i){li.style.setProperty('--i',Math.min(i,10));});
+  }
+
+  function run(){
+    try{reveal();}catch(e){}
+    try{lightbox();}catch(e){}
+    try{railPop();}catch(e){}
+    try{nav();}catch(e){}
+  }
+  if(d.readyState==='loading')d.addEventListener('DOMContentLoaded',run);else run();
 })();
