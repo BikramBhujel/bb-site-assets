@@ -1,4 +1,4 @@
-/* bb-motion.js v1.0.0 for bikrambhujel.com.np. Motion ported from React Bits (reactbits.dev, MIT + Commons Clause). */
+/* bb-motion.js v1.0.1 for bikrambhujel.com.np. Motion ported from React Bits (reactbits.dev, MIT + Commons Clause). */
 (function(){
   // v1.47: SpotlightCard, ShinyText and CountUp, ported from React Bits to plain JS.
   var mm=function(q){return window.matchMedia&&matchMedia(q).matches;};
@@ -45,7 +45,7 @@
   }
 
   function scan(){
-    if(fine&&!reduce)[].forEach.call(document.querySelectorAll('.bb-card'),spotlight);
+    if(fine)[].forEach.call(document.querySelectorAll('.bb-card'),spotlight); // a light under the pointer, not movement: kept for reduced motion too
     if(reduce)return;
     [].forEach.call(document.querySelectorAll('.bb-hire .bb-cta:not([data-bb-pass])'),function(a){
       a.setAttribute('data-bb-pass','1');whenSeen(a,function(){a.classList.add('bb-pass-on');});
@@ -126,7 +126,12 @@
   build();
   window.addEventListener('resize',build,{passive:true});
   new MutationObserver(colors).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
-  if(reduce)return;
+  if(reduce){
+    // Reduced motion: the grid stays still, but dots near the pointer still light up.
+    hero.addEventListener('pointermove',function(e){var p=local(e);px=p[0];py=p[1];draw(0);},{passive:true});
+    hero.addEventListener('pointerleave',function(){px=py=-1e4;draw(0);},{passive:true});
+    return;
+  }
   hero.addEventListener('pointermove',function(e){var p=local(e);px=p[0];py=p[1];go();},{passive:true});
   hero.addEventListener('pointerleave',function(){px=py=-1e4;},{passive:true});
   hero.addEventListener('pointerdown',function(e){var p=local(e);rings.push({x:p[0],y:p[1],r:0,a:1});go();},{passive:true});
@@ -138,7 +143,7 @@
 })();
 (function(){
   // v1.48: spotlight on the free-tool tiles (same light as the post cards), mouse users only.
-  if(!(window.matchMedia&&matchMedia('(hover: hover) and (pointer: fine)').matches)||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  if(!(window.matchMedia&&matchMedia('(hover: hover) and (pointer: fine)').matches))return;
   [].forEach.call(document.querySelectorAll('.bb-tools a'),function(t){
     if(t.querySelector('.bb-spot'))return;
     var a=document.createElement('span');a.className='bb-spot';a.setAttribute('aria-hidden','true');
